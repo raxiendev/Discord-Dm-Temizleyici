@@ -1,0 +1,18 @@
+
+
+Bu araç, Discord DM (özel mesaj) geçmişinizi tamamen veya belirlediğiniz kriterlere göre otomatik olarak temizlemenizi sağlayan açık kaynaklı bir betiktir. Kullanıcı gizliliğini ve güvenliğini ön planda tutar; kesinlikle token çalma, zararlı kod barındırma veya harici sunuculara veri sızdırma gibi güvenlik riski taşıyan hiçbir işlem yapmaz. Tüm işlemler yalnızca sizin tarayıcınız veya istemciniz üzerinden, yetkili olduğunuz resmi Discord API uç noktaları kullanılarak gerçekleştirilir.
+---------------
+# Harici bagimlilik YOKTUR. Tum moduller Python standart kutuphanesidir.
+# Python 3.8+ (onerilen: 3.10+) ile ek kurulum gerekmeden calisir.
+#
+# Kullanilan moduller:
+# - http.client (hizli keep-alive HTTPS baglantisi)
+# - json (API veri isleme)
+# - threading (arayuzu dondurmadan arka planda calisma)
+# - time (bekleme / hiz siniri yonetimi)
+# - tkinter, tkinter.messagebox, tkinter.scrolledtext, tkinter.ttk (grafik arayuz)
+# - urllib.error, urllib.parse, urllib.request (HTTP istekleri)
+#
+# Kurulum gerekmez. Calistirmak icin:
+#   python dm.py
+iletişim raxienkingdoms 
