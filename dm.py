@@ -1,4 +1,22 @@
-"""Discord DM Temizleyici - DM kanalindaki mesajlari toplu siler."""
+"""Discord DM Temizleyici - DM kanalindaki mesajlari toplu siler (SINIRSIZ MOD)."""
+
+import ctypes
+import sys
+
+
+def _hide_console():
+    """python.exe ile calistirildiginda acilan siyah CMD penceresini gizle.
+    pythonw.exe / .pyw ile calisirsa zaten konsol yoktur, hata vermez."""
+    try:
+        if sys.platform.startswith("win"):
+            hwnd = ctypes.windll.kernel32.GetConsoleWindow()
+            if hwnd:
+                ctypes.windll.user32.ShowWindow(hwnd, 0)  # SW_HIDE = 0
+    except Exception:
+        pass
+
+
+_hide_console()
 
 import http.client
 import json
@@ -165,15 +183,16 @@ def get_messages(token, channel_id, before=None, limit=100):
 class App:
     def __init__(self, root):
         self.root = root
-        self.root.title("Discord DM Temizleyici")
+        self.root.title("Discord DM Temizleyici - SINIRSIZ")
         self.root.geometry("700x660")
         self.root.minsize(600, 550)
 
         self.token_var = tk.StringVar()
         self.channel_var = tk.StringVar()
         self.only_mine_var = tk.BooleanVar(value=False)
-        self.skip_others_var = tk.BooleanVar(value=True)
-        self.delay_var = tk.DoubleVar(value=0.15)
+        self.skip_others_var = tk.BooleanVar(value=False)
+        # SINIRSIZ MOD: bekleme varsayilan 0 -> maksimum hiz, limit yok, TUM mesajlar
+        self.delay_var = tk.DoubleVar(value=0.0)
 
         self.running = False
         self.user_id = None
@@ -211,21 +230,21 @@ class App:
         ttk.Label(main, text="veya Kanal ID'yi elle girin:").pack(anchor="w")
         ttk.Entry(main, textvariable=self.channel_var, width=40).pack(anchor="w", pady=2)
 
-        options = ttk.LabelFrame(main, text="Seçenekler", padding=8)
+        options = ttk.LabelFrame(main, text="Seçenekler (SINIRSIZ MOD: TÜM mesajlar silinir)", padding=8)
         options.pack(fill="x", pady=6)
         ttk.Checkbutton(
             options,
-            text="Yalnızca benim mesajlarımı sil",
+            text="Yalnızca benim mesajlarımı sil (KAPALI tut = TÜM mesajları dene)",
             variable=self.only_mine_var,
         ).pack(anchor="w")
         ttk.Checkbutton(
             options,
-            text="Başkalarının mesajlarını denemeden atla (önerilir, daha hızlı)",
+            text="Başkalarının mesajlarını denemeden atla (KAPALI tut = TÜM mesajları dene)",
             variable=self.skip_others_var,
         ).pack(anchor="w")
-        ttk.Label(options, text="Mesajlar arası bekleme (saniye):").pack(anchor="w", pady=(6, 0))
+        ttk.Label(options, text="Mesajlar arası bekleme (saniye) - 0 = SINIRSIZ/HIZLI:").pack(anchor="w", pady=(6, 0))
         ttk.Scale(options, from_=0.0, to=1.0, variable=self.delay_var, orient="horizontal").pack(fill="x")
-        self.delay_label = ttk.Label(options, text="0.15 sn")
+        self.delay_label = ttk.Label(options, text="0.00 sn (SINIRSIZ)")
         self.delay_label.pack(anchor="w")
         self.delay_var.trace_add("write", self._update_delay_label)
 
@@ -243,7 +262,11 @@ class App:
 
     def _update_delay_label(self, *args):
         try:
-            self.delay_label.config(text=f"{self.delay_var.get():.2f} sn")
+            v = float(self.delay_var.get())
+            if v <= 0.001:
+                self.delay_label.config(text="0.00 sn (SINIRSIZ - maksimum hız)")
+            else:
+                self.delay_label.config(text=f"{v:.2f} sn")
         except Exception:
             pass
     def toggle_token(self):
@@ -356,7 +379,7 @@ class App:
             return
         if not self.ensure_user(token):
             return
-        self.log_threadsafe(f"Kanal taranıyor: {channel_id}...\n")
+        self.log_threadsafe(f"Kanal taranıyor (SINIRSIZ): {channel_id}...\n")
         before = None
         total = 0
         mine = 0
@@ -364,8 +387,8 @@ class App:
             data, code, _ = get_messages(token, channel_id, before=before)
             if code == 429:
                 wait = get_retry_after(data, {}, 2.0)
-                self.log_threadsafe(f"Hız sınırı aşıldı. {wait:.1f} sn bekleniyor...\n")
-                time.sleep(wait + 0.5)
+                self.log_threadsafe(f"Hız sınırı aşıldı. {wait:.1f} sn bekleniyor... (sınırsız devam edecek)\n")
+                time.sleep(wait + 0.2)
                 continue
             if code != 200 or not data:
                 break
@@ -375,10 +398,11 @@ class App:
                 if author_id == str(self.user_id):
                     mine += 1
             before = data[-1]["id"]
-            self.log_threadsafe(f"Taranan: {total}, sizinki: {mine}...\n")
+            self.log_threadsafe(f"Taranan: {total}, sizinki: {mine}... (sınırsız tarama)\n")
             if len(data) < 100:
                 break
-            time.sleep(0.4)
+            # SINIRSIZ MOD: gereksiz bekleme yok, sadece rate-limit korumasi
+            time.sleep(0.15)
         self.log_threadsafe(f"Tarama tamamlandı. Toplam: {total}, silinebilir (sizinki): {mine}\n")
     def confirm_and_start(self):
         channel_id = self.channel_var.get().strip()
@@ -429,15 +453,15 @@ class App:
         try:
             delay = float(self.delay_var.get())
         except Exception:
-            delay = 0.15
+            delay = 0.0
         delay = max(0.0, delay)
         self.running = True
         started_at = time.time()
-        self.log_threadsafe(f"Silme başladı (kanal={channel_id}, bekleme={delay:.2f} sn).\n")
+        self.log_threadsafe(f"SINIRSIZ silme başladı (kanal={channel_id}, bekleme={delay:.2f} sn). TÜM mesajlar silinecek, Durdur'a basana kadar devam eder.\n")
         if not self.ensure_user(token):
             self.running = False
             return
-        skip_others = bool(self.only_mine_var.get() or self.skip_others_var.get())
+        # SINIRSIZ MOD: filtre YOK - kendi + karsi taraf TUM mesajlar denenecek
         deleted = 0
         skipped = 0
         forbidden = 0
@@ -472,18 +496,14 @@ class App:
                     if not message_id:
                         continue
                     scanned += 1
-                    author_id = str(msg.get("author", {}).get("id", ""))
-                    if skip_others and author_id != str(self.user_id):
-                        skipped += 1
-                        continue
+                    # SINIRSIZ: kimin mesaji olduguna bakmadan TUMUNU silmeye calis
                     cycle_attempts += 1
                     description = self.describe_message(msg)
                     completed = False
                     forbidden_hit = False
                     permanent = False
-                    for _ in range(6):
-                        if not self.running:
-                            break
+                    # SINIRSIZ MOD: mesaj silinene / silinemez olduğu kesinleşene kadar sonsuz dene
+                    while self.running:
                         result, status, resp_headers = delete_message_fast(token, channel_id, message_id)
                         if status in (200, 204, 404):
                             deleted += 1
@@ -525,13 +545,20 @@ class App:
             if not self.running:
                 break
             if cycle_attempts == 0:
-                self.log_threadsafe(f"Tur {cycle}: silinebilir mesaj bulunamadı. Durduruluyor.\n")
-                break
+                self.log_threadsafe(f"Tur {cycle}: kanalda mesaj kalmadı. Yeni mesajlar için bekleniyor... (Durdur'a basana kadar SINIRSIZ devam)\n")
+                # SINIRSIZ MOD: ASLA durma, sadece bekle ve yeniden tara
+                for _ in range(30):
+                    if not self.running:
+                        break
+                    time.sleep(0.2)
+                continue
             self.log_threadsafe(f"Tur {cycle} bitti: silinen={cycle_deleted} denenen={cycle_attempts} tekrar={cycle_retries}\n")
             if cycle_deleted == 0 and cycle_retries == 0:
-                self.log_threadsafe("Silinebilir mesaj kalmadı. Tamamlandı.\n")
-                break
-            time.sleep(1.0)
+                self.log_threadsafe("Bu turda silinen olmadı (kalanlar yetkisiz olabilir). SINIRSIZ MOD: yeniden taranıyor...\n")
+                time.sleep(1.0)
+                continue
+            # SINIRSIZ MOD: turlar arasi kisa bekleme, durmadan devam
+            time.sleep(0.3)
         self.running = False
         elapsed = max(time.time() - started_at, 0.1)
         rate = deleted / elapsed
