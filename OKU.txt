@@ -15,4 +15,5 @@ Bu araç, Discord DM (özel mesaj) geçmişinizi tamamen veya belirlediğiniz kr
 #
 # Kurulum gerekmez. Calistirmak icin:
 #   python dm.py
+not: discordda profiliniz gizli veya görünmez olmamasi lazım yoksa hata verir hata verirse discorddan ulaşabilirsiniz
 iletişim raxienkingdoms 
